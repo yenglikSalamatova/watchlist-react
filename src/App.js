@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 const tempMovieData = [
   {
@@ -50,9 +50,40 @@ const tempWatchedData = [
 const average = (arr) =>
   arr.reduce((acc, cur, i, arr) => acc + cur / arr.length, 0);
 
+const KEY = "HQ4ZTFW-QAN4MJY-Q85GRV5-3SCKHH3";
+
 export default function App() {
-  const [movies, setMovies] = useState(tempMovieData);
-  const [watched, setWatched] = useState(tempWatchedData);
+  const [movies, setMovies] = useState([]);
+  const [watched, setWatched] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
+  const query = "wdklwkll";
+
+  useEffect(function () {
+    async function fetchMovies() {
+      try {
+        setIsLoading(true);
+        const res = await fetch(
+          `https://api.kinopoisk.dev/v1.2/movie/search?page=1&limit=9&query=${query}`,
+          {
+            method: "GET",
+            headers: { accept: "application/json", "X-API-KEY": `${KEY}` },
+          }
+        );
+        if (!res.ok) throw new Error("Что-то пошло не так с загрузкой фильмов");
+        const data = await res.json();
+        if (data.total === 0) throw new Error("Фильм не найден");
+        setMovies(data.docs);
+        console.log(data);
+      } catch (err) {
+        console.log(err.message);
+        setError(err.message);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    fetchMovies();
+  }, []);
 
   return (
     <>
@@ -63,7 +94,10 @@ export default function App() {
       </NavBar>
       <Main>
         <Box>
-          <MovieList movies={movies} />
+          {/* {isLoading ? <Loader /> : <MovieList movies={movies} />} */}
+          {isLoading && <Loader />}
+          {!isLoading && !error && <MovieList movies={movies} />}
+          {error && <ErrorMessage message={error} />}
         </Box>
         <Box>
           <WatchedSummary watched={watched} />
@@ -71,6 +105,18 @@ export default function App() {
         </Box>
       </Main>
     </>
+  );
+}
+
+function Loader() {
+  return <p className="loader">Загрузка...</p>;
+}
+
+function ErrorMessage({ message }) {
+  return (
+    <p className="error">
+      <span>⛔{message}</span>
+    </p>
   );
 }
 
@@ -103,7 +149,7 @@ function Search() {
 function NumResults({ movies }) {
   return (
     <p className="num-results">
-      Found <strong>{movies.length}</strong> results
+      Найдено <strong>{movies.length}</strong> результата
     </p>
   );
 }
@@ -130,7 +176,7 @@ function MovieList({ movies }) {
   return (
     <ul className="list">
       {movies?.map((movie) => (
-        <Movie movie={movie} key={movie.imdbID} />
+        <Movie movie={movie} key={movie.id} />
       ))}
     </ul>
   );
@@ -139,12 +185,12 @@ function MovieList({ movies }) {
 function Movie({ movie }) {
   return (
     <li>
-      <img src={movie.Poster} alt={`${movie.Title} poster`} />
-      <h3>{movie.Title}</h3>
+      <img src={movie.poster} alt={`${movie.name} poster`} />
+      <h3>{movie.name}</h3>
       <div>
         <p>
-          <span>🗓</span>
-          <span>{movie.Year}</span>
+          <span>📅</span>
+          <span>{movie.year}</span>
         </p>
       </div>
     </li>
@@ -152,16 +198,16 @@ function Movie({ movie }) {
 }
 
 function WatchedSummary({ watched }) {
-  const avgImdbRating = average(watched.map((movie) => movie.imdbRating));
+  const avgImdbRating = average(watched.map((movie) => movie.rating));
   const avgUserRating = average(watched.map((movie) => movie.userRating));
   const avgRuntime = average(watched.map((movie) => movie.runtime));
   return (
     <div className="summary">
-      <h2>Movies you watched</h2>
+      <h2>Фильмы, которые вы посмотрели</h2>
       <div>
         <p>
           <span>#️⃣</span>
-          <span>{watched.length} movies</span>
+          <span>{watched.length} фильмов</span>
         </p>
         <p>
           <span>⭐️</span>
@@ -173,7 +219,7 @@ function WatchedSummary({ watched }) {
         </p>
         <p>
           <span>⏳</span>
-          <span>{avgRuntime} min</span>
+          <span>{avgRuntime} мин</span>
         </p>
       </div>
     </div>
@@ -206,7 +252,7 @@ function WatchedMovie({ movie }) {
         </p>
         <p>
           <span>⏳</span>
-          <span>{movie.runtime} min</span>
+          <span>{movie.runtime} мин</span>
         </p>
       </div>
     </li>
