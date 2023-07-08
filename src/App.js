@@ -50,46 +50,65 @@ const tempWatchedData = [
 const average = (arr) =>
   arr.reduce((acc, cur, i, arr) => acc + cur / arr.length, 0);
 
-const KEY = "HQ4ZTFW-QAN4MJY-Q85GRV5-3SCKHH3";
+// const KEY = "HQ4ZTFW-QAN4MJY-Q85GRV5-3SCKHH3";
+const KEY = "690dafd9";
 
 export default function App() {
+  const [query, setQuery] = useState("");
   const [movies, setMovies] = useState([]);
   const [watched, setWatched] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
-  const query = "wdklwkll";
+  const temp = "интерстеллар";
 
-  useEffect(function () {
-    async function fetchMovies() {
-      try {
-        setIsLoading(true);
-        const res = await fetch(
-          `https://api.kinopoisk.dev/v1.2/movie/search?page=1&limit=9&query=${query}`,
-          {
-            method: "GET",
-            headers: { accept: "application/json", "X-API-KEY": `${KEY}` },
-          }
-        );
-        if (!res.ok) throw new Error("Что-то пошло не так с загрузкой фильмов");
-        const data = await res.json();
-        if (data.total === 0) throw new Error("Фильм не найден");
-        setMovies(data.docs);
-        console.log(data);
-      } catch (err) {
-        console.log(err.message);
-        setError(err.message);
-      } finally {
-        setIsLoading(false);
+  useEffect(
+    function () {
+      async function fetchMovies() {
+        try {
+          setIsLoading(true);
+          setError("");
+
+          // const res = await fetch(
+          //   `https://api.kinopoisk.dev/v1.2/movie/search?page=1&limit=8&query=${query}`,
+          //   {
+          //     method: "GET",
+          //     headers: { accept: "application/json", "X-API-KEY": `${KEY}` },
+          //   }
+          // );
+
+          const res = await fetch(
+            `https://www.omdbapi.com/?apikey=${KEY}&s=${query}`
+          );
+
+          if (!res.ok)
+            throw new Error("Что-то пошло не так с загрузкой фильмов");
+
+          const data = await res.json();
+          if (data.Response === "False") throw new Error("Фильм не найден");
+          setMovies(data.Search);
+          console.log(data);
+        } catch (err) {
+          console.log(err.message);
+          setError(err.message);
+        } finally {
+          setIsLoading(false);
+        }
       }
-    }
-    fetchMovies();
-  }, []);
+      if (query.length < 3) {
+        setMovies([]);
+        setError("");
+        return;
+      }
+      fetchMovies();
+    },
+    [query]
+  );
 
   return (
     <>
       <NavBar>
         <Logo />
-        <Search />
+        <Search query={query} setQuery={setQuery} />
         <NumResults movies={movies} />
       </NavBar>
       <Main>
@@ -133,8 +152,7 @@ function Logo() {
   );
 }
 
-function Search() {
-  const [query, setQuery] = useState("");
+function Search({ query, setQuery }) {
   return (
     <input
       className="search"
@@ -149,7 +167,7 @@ function Search() {
 function NumResults({ movies }) {
   return (
     <p className="num-results">
-      Найдено <strong>{movies.length}</strong> результата
+      Найдено <strong>{movies?.length}</strong> результата
     </p>
   );
 }
@@ -176,7 +194,7 @@ function MovieList({ movies }) {
   return (
     <ul className="list">
       {movies?.map((movie) => (
-        <Movie movie={movie} key={movie.id} />
+        <Movie movie={movie} key={movie.imdbID} />
       ))}
     </ul>
   );
@@ -185,12 +203,12 @@ function MovieList({ movies }) {
 function Movie({ movie }) {
   return (
     <li>
-      <img src={movie.poster} alt={`${movie.name} poster`} />
-      <h3>{movie.name}</h3>
+      <img src={movie.Poster} alt={`${movie.name} poster`} />
+      <h3>{movie.Title}</h3>
       <div>
         <p>
           <span>📅</span>
-          <span>{movie.year}</span>
+          <span>{movie.Year}</span>
         </p>
       </div>
     </li>
@@ -198,7 +216,7 @@ function Movie({ movie }) {
 }
 
 function WatchedSummary({ watched }) {
-  const avgImdbRating = average(watched.map((movie) => movie.rating));
+  const avgImdbRating = average(watched.map((movie) => movie.imdbRating));
   const avgUserRating = average(watched.map((movie) => movie.userRating));
   const avgRuntime = average(watched.map((movie) => movie.runtime));
   return (
