@@ -1,4 +1,4 @@
-#About 
+# About 
 
 The Movie Watchlist is a dynamic web application built using React and leveraging the power of an API to create a seamless movie tracking experience. With this application, users can easily keep track of the movies they've watched and discover new ones to add to their list. The React framework allows for a smooth and interactive user interface, enhancing the overall user experience.
 
